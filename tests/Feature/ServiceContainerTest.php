@@ -3,7 +3,10 @@
 namespace Tests\Feature;
 
 use App\Data\Foo;
+use App\Data\Bar;
 use App\Data\Person;
+use App\Services\HelloService;
+use App\Services\HelloServiceIndonesia;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use Tests\TestCase;
@@ -12,7 +15,7 @@ use Tests\TestCase;
 class ServiceContainerTest extends TestCase
 {
 
-    public function testDependecyInjection()
+    public function testDependecy()
     {
         //  foo = new Foo();
         $foo1 = $this->app->make(Foo::class);
@@ -68,6 +71,50 @@ class ServiceContainerTest extends TestCase
         self::assertEquals('Muhammad', $person1->firstName);
         self::assertEquals('Muhammad', $person2->firstName);
         self::assertSame($person1, $person2);
+    }
+
+    public function testDependecyInjection()
+    {
+        $this->app->singleton(Foo::class, function ($app){
+            return new Foo();
+        });
+
+        $foo = $this->app->make(Foo::class);
+        $bar = $this->app->make(Bar::class);
+
+        self::assertSame($foo, $bar->foo);
+    }
+
+    public function testDependecyInjectionClosure()
+    {
+        
+        $this->app->singleton(Foo::class, function ($app){
+            return new Foo();
+        });
+        $this->app->singleton(Bar::class, function ($app){
+            $foo = $app->make(Foo::class);
+            return new Bar($foo);
+        });
+
+        $foo = $this->app->make(Foo::class);
+        $bar1 = $this->app->make(Bar::class);
+        $bar2 = $this->app->make(Bar::class);
+
+        self::assertSame($foo, $bar1->foo);
+        self::assertSame($bar1, $bar2);
+    }
+
+    public function testInterfaceToClass()
+    {
+        // $this->app->singleton(HelloService::class, HelloServiceIndonesia::class);
+
+        $this->app->singleton(HelloService::class, function ($app){
+            return new HelloServiceIndonesia();
+        });
+
+        $helloService = $this->app->make(HelloService::class);
+
+        self::assertEquals('Halo Iqbal', $helloService->hello('Iqbal'));
     }
 
 }
